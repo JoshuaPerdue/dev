@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Next Sunday Event</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background: #1E1E1E;
+      color: #E6E6E6;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    .event-card {
+      background: #2A2A2A;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    img {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    h2, h3, p {
+      color: #E6E6E6;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Next Sunday’s Event</h1>
+  <div id="event-container">Loading…</div>
+
+  <script>
+    function getUpcomingSundaySlug() {
+      const today = new Date();
+      const day = today.getDay();
+      const daysUntilSunday = (7 - day) % 7 || 7;
+      const nextSunday = new Date(today);
+      nextSunday.setDate(today.getDate() + daysUntilSunday);
+
+      const mm = String(nextSunday.getMonth() + 1).padStart(2, "0");
+      const dd = String(nextSunday.getDate()).padStart(2, "0");
+      const yyyy = nextSunday.getFullYear();
+
+      return `${mm}-${dd}-${yyyy}`;
+    }
+
+    async function loadSundayService() {
+      const container = document.getElementById("event-container");
+      const targetSlug = getUpcomingSundaySlug();
+
+      try {
+        const response = await fetch("https://sam.highlandsapi.com/v7/events/live?platform=web");
+        const data = await response.json();
+
+        const events = Array.isArray(data) ? data : (data.events || []);
+
+        const event = events.find(evt =>
+          evt.event_type === "sunday_service" &&
+          evt.media_post &&
+          evt.media_post.notes_slug === targetSlug
+        );
+
+        if (!event) {
+          container.innerHTML = `No Sunday service found for slug ${targetSlug}.`;
+          return;
+        }
+
+        const media = event.media_post;
+
+        container.innerHTML = `
+          <div class="event-card">
+            <img src="${media.series_image_url}" alt="Series Image" />
+            <h2>${media.title}</h2>
+            <h3>${media.subtitle}</h3>
+            <p><strong>Speaker:</strong> ${media.speaker}</p>
+          </div>
+        `;
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = "Error loading event.";
+      }
+    }
+
+    loadSundayService();
+  </script>
+
+</body>
+</html>
